@@ -1,0 +1,85 @@
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install MySQL server
+  apt:
+    name: mysql-server
+    state: present
+    update_cache: yes
+
+- name: Ensure MySQL service is running
+  systemd:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Install Python3 and MySQL Python dependencies
+  apt:
+    name:
+      - python3-pip
+      - python3-dev
+      - libmysqlclient-dev
+    state: present
+    update_cache: yes
+
+- name: Install PyMySQL via APT
+  apt:
+    name: python3-pymysql
+    state: present
+    update_cache: yes
+
+- name: Remove anonymous MySQL users using auth_socket
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    user: ''
+    host_all: yes
+    state: absent
+
+- name: Remove remote root login on specified hosts using auth_socket
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    user: root
+    host: "{{ item }}"
+    state: absent
+  loop: "{{ mysql_remote_root_removal_hosts }}"
+
+- name: Remove test database using auth_socket
+  community.mysql.mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: test
+    state: absent
+
+- name: Reload MySQL privileges using auth_socket
+  command: mysqladmin flush-privileges --socket=/var/run/mysqld/mysqld.sock
+
+
+- name: Enable slow query log using auth_socket
+  community.mysql.mysql_variables:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    variable: slow_query_log
+    value: "ON"
+
+- name: Set long query time using auth_socket
+  community.mysql.mysql_variables:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    variable: long_query_time
+    value: 1
+
+
+
+- name: Download Sakila sample database via wget shell command
+  shell: wget -nv -O {{ mysql_sample_db_dest }} {{ mysql_sample_db_url }}
+
+
+- name: Extract Sakila database files
+  unarchive:
+    src: "{{ mysql_sample_db_dest }}"
+    dest: "/tmp/"
+    remote_src: yes
+
+- name: Import Sakila schema using auth_socket
+  shell: mysql --socket=/var/run/mysqld/mysqld.sock < {{ mysql_sample_db_extract_dir }}/sakila-schema.sql
+
+- name: Import Sakila data using auth_socket
+  shell: mysql --socket=/var/run/mysqld/mysqld.sock < {{ mysql_sample_db_extract_dir }}/sakila-data.sql

@@ -1,0 +1,5 @@
+sysbench_mysql_user: "sysbench"
+sysbench_mysql_password: "StrongPass!123"
+sysbench_db_name: "sbtest"
+sysbench_tables: 10
+sysbench_table_size: 20000

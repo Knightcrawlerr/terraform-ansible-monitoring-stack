@@ -1,0 +1,63 @@
+- name: Install sysbench package
+  apt:
+    name: sysbench
+    state: present
+    update_cache: yes
+
+- name: Ensure MySQL database {{ sysbench_db_name }} exists
+  community.mysql.mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ sysbench_db_name }}"
+    state: present
+
+- name: Create MySQL user for sysbench
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ sysbench_mysql_user }}"
+    host: "%"
+    password: "{{ sysbench_mysql_password }}"
+    priv: "{{ sysbench_db_name }}.*:ALL"
+    state: present
+
+- name: Flush MySQL privileges
+  mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "FLUSH PRIVILEGES;"
+
+- name: Prepare sysbench dataset
+  command: >
+    sysbench oltp_read_write
+    --mysql-user={{ sysbench_mysql_user }}
+    --mysql-password={{ sysbench_mysql_password }}
+    --mysql-db={{ sysbench_db_name }}
+    --tables={{ sysbench_tables }}
+    --table-size={{ sysbench_table_size }}
+    prepare
+  args:
+    creates: /tmp/sysbench_prepared_flag
+  register: prepare_result
+  changed_when: "'Preparing' in prepare_result.stdout"
+  check_mode: no
+
+- name: Create marker file to prevent re-preparing dataset
+  file:
+    path: /tmp/sysbench_prepared_flag
+    state: touch
+  when: prepare_result.changed
+
+- name: Create alias for sysbench run command
+  lineinfile:
+    path: /etc/profile.d/sysbench_alias.sh
+    create: yes
+    line: >
+      alias sysbench-run="sysbench oltp_read_write
+      --mysql-user={{ sysbench_mysql_user }}
+      --mysql-password={{ sysbench_mysql_password }}
+      --mysql-db={{ sysbench_db_name }}
+      --tables={{ sysbench_tables }}
+      --table-size={{ sysbench_table_size }}
+      --threads=50 --time=600 run"
+    state: present
+    owner: root
+    group: root
+    mode: '0644'

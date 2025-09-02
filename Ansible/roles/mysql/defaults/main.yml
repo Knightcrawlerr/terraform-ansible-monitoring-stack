@@ -1,0 +1,6 @@
+mysql_root_password: ""
+mysql_remote_root_removal_hosts:
+  - "%"
+mysql_sample_db_url: "https://downloads.mysql.com/docs/sakila-db.tar.gz"
+mysql_sample_db_dest: "/tmp/sakila-db.tar.gz"
+mysql_sample_db_extract_dir: "/tmp/sakila-db"

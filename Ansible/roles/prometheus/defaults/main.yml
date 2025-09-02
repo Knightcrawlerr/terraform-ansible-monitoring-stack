@@ -1,0 +1,14 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for monitoring_server
+prometheus_version: "3.5.0"
+prometheus_user: "prometheus"
+prometheus_group: "prometheus"
+prometheus_bin_dir: "/usr/local/bin"
+prometheus_config_dir: "/etc/prometheus"
+prometheus_data_dir: "/var/lib/prometheus"
+prometheus_download_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+prometheus_targets:
+  - "localhost:9090"
+  - "app-server-ip:9100"
+  - "app-server-ip:9104"

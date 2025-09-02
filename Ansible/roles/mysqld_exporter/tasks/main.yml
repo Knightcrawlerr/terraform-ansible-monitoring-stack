@@ -1,0 +1,96 @@
+- name: Download mysqld_exporter tarball
+  get_url:
+    url: "{{ mysqld_exporter_tar_url }}"
+    dest: "{{ mysqld_exporter_tar_dest }}"
+    mode: '0644'
+
+- name: Extract mysqld_exporter tarball
+  unarchive:
+    src: "{{ mysqld_exporter_tar_dest }}"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Copy mysqld_exporter binary to /usr/local/bin
+  copy:
+    src: "{{ mysqld_exporter_extract_dir }}/mysqld_exporter"
+    dest: "{{ mysqld_exporter_bin_path }}"
+    owner: root
+    group: root
+    mode: '0755'
+    remote_src: yes
+
+- name: Ensure mysqld_exporter group exists
+  group:
+    name: "{{ mysqld_exporter_service_group }}"
+    state: present
+    system: yes
+
+- name: Ensure mysqld_exporter user exists
+  user:
+    name: "{{ mysqld_exporter_service_user }}"
+    group: "{{ mysqld_exporter_service_group }}"
+    shell: /bin/false
+    system: yes
+    create_home: no
+
+
+- name: Create mysqld_exporter user using auth_socket
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ mysqld_exporter_user }}"
+    host: localhost
+    password: "{{ mysqld_exporter_password }}"
+    priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
+    state: present
+    
+
+- name: Set MAX_USER_CONNECTIONS for mysqld_exporter user
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "ALTER USER 'mysqld_exporter'@'localhost' WITH MAX_USER_CONNECTIONS 3;"
+
+- name: Create MySQL credentials file for mysqld_exporter
+  copy:
+    dest: "{{ mysqld_exporter_mycfn_path }}"
+    content: |
+      [client]
+      user={{ mysqld_exporter_user }}
+      password={{ mysqld_exporter_password }}
+    owner: "{{ mysqld_exporter_service_user }}"
+    group: "{{ mysqld_exporter_service_group }}"
+    mode: '0600'
+
+- name: Create systemd unit for mysqld_exporter
+  copy:
+    dest: /etc/systemd/system/mysqld_exporter.service
+    content: |
+      [Unit]
+      Description=Prometheus MySQLd Exporter
+      After=network.target mysql.service
+
+      [Service]
+      User={{ mysqld_exporter_service_user }}
+      Group={{ mysqld_exporter_service_group }}
+      ExecStart={{ mysqld_exporter_bin_path }} \
+        --config.my-cnf={{ mysqld_exporter_mycfn_path }} \
+        --web.listen-address={{ mysqld_exporter_listen_address }}
+      Restart=always
+      RestartSec=5s
+      ProtectSystem=full
+      NoNewPrivileges=true
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start mysqld_exporter service
+  systemd:
+    name: mysqld_exporter
+    enabled: yes
+    state: started

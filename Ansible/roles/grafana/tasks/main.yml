@@ -1,0 +1,37 @@
+---
+- name: Ensure /etc/apt/keyrings directory exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add Grafana GPG key
+  ansible.builtin.apt_key:
+    url: https://apt.grafana.com/gpg.key
+    state: present
+
+
+- name: Add Grafana APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb https://apt.grafana.com stable main"
+    state: present
+    filename: grafana
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install Grafana
+  ansible.builtin.apt:
+    name: grafana-enterprise
+    state: present
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Enable and start grafana-server service
+  ansible.builtin.systemd:
+    name: grafana-server
+    enabled: yes
+    state: started

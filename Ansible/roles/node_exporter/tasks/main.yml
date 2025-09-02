@@ -1,0 +1,62 @@
+- name: Download node_exporter tarball
+  get_url:
+    url: "{{ node_exporter_download_url }}"
+    dest: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    mode: '0644'
+
+- name: Extract node_exporter archive
+  unarchive:
+    src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Copy node_exporter binary to destination directory
+  copy:
+    src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+    dest: "{{ node_exporter_binary_path }}/node_exporter"
+    owner: root
+    group: root
+    mode: '0755'
+    remote_src: yes
+
+- name: Create system group for node_exporter
+  group:
+    name: "{{ node_exporter_group }}"
+    system: yes
+
+- name: Create system user for node_exporter
+  user:
+    name: "{{ node_exporter_user }}"
+    group: "{{ node_exporter_group }}"
+    shell: /bin/false
+    system: yes
+    create_home: no
+
+- name: Create systemd service unit file
+  copy:
+    dest: /etc/systemd/system/node_exporter.service
+    content: |
+      [Unit]
+      Description=Prometheus Node Exporter
+      After=network.target
+
+      [Service]
+      User={{ node_exporter_user }}
+      ExecStart={{ node_exporter_binary_path }}/node_exporter
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start node_exporter service
+  systemd:
+    name: node_exporter
+    enabled: yes
+    state: started
