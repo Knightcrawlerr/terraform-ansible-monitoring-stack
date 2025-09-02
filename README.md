@@ -5,7 +5,7 @@ The goal is to build hands-on experience in deploying and automating monitoring 
 
 ---
 
-## 🚀 Project Overview
+## Project Overview
 
 - **Terraform** provisions the infrastructure:
   - One **monitoring server** (Prometheus, Grafana, Alertmanager, Node Exporter)  
@@ -23,7 +23,7 @@ This setup simulates what you would see in a real production monitoring environm
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 terraform-ansible-monitoring-stack/
@@ -39,7 +39,7 @@ terraform-ansible-monitoring-stack/
 
 ---
 
-## 🔧 Components
+## Components
 
 - **Prometheus** → scrapes metrics (CPU, memory, disk, MySQL, etc.)  
 - **Node Exporter** → system-level metrics (CPU, memory, disk, load)  
@@ -49,7 +49,7 @@ terraform-ansible-monitoring-stack/
 
 ---
 
-## 📊 Example Alerts
+## Example Alerts
 
 - High CPU usage  
 - High memory consumption  
@@ -59,7 +59,7 @@ terraform-ansible-monitoring-stack/
 
 ---
 
-## 🔑 Skills Demonstrated
+## Skills Demonstrated
 
 - Infrastructure automation with **Terraform**  
 - Server configuration with **Ansible**  
@@ -69,7 +69,7 @@ terraform-ansible-monitoring-stack/
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
                  +----------------------+
@@ -94,7 +94,7 @@ terraform-ansible-monitoring-stack/
 
 ---
 
-## 🚦 Getting Started (High-Level)
+## Getting Started (High-Level)
 
 1. **Provision infrastructure** with Terraform  
 2. **Run Ansible playbooks** to install and configure services  
@@ -105,7 +105,7 @@ terraform-ansible-monitoring-stack/
 
 ---
 
-## 📌 Future Enhancements
+## Future Enhancements
 
 - Add Slack/Email integration for alerts  
 - Extend exporters (Blackbox Exporter for website uptime, Redis Exporter, etc.)  
