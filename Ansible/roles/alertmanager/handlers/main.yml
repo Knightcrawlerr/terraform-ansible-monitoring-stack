@@ -1,0 +1,7 @@
+#SPDX-License-Identifier: MIT-0
+---
+# handlers file for alert-manager
+- name: restart alertmanager
+  systemd:
+    name: alertmanager
+    state: restarted

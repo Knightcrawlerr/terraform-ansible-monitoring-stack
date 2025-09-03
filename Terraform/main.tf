@@ -17,7 +17,7 @@ locals {
   instances = {
     "monitoring" = { name = "${local.name_prefix}-monitoring" }
     "appdemo-1"  = { name = "${local.name_prefix}-appdemo-1" }
-    "appdemo-2"  = { name = "${local.name_prefix}-appdemo-2" }
+    # "appdemo-2"  = { name = "${local.name_prefix}-appdemo-2" }
     # Add more entries here for future app demo servers
   }
 }
@@ -89,6 +89,13 @@ resource "aws_security_group" "sg_monitoring" {
   ingress {
     from_port   = 9090
     to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9093
+    to_port     = 9093
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

@@ -1,0 +1,56 @@
+groups:
+  - name: node_alerts
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 60
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage > 80% for 2 minutes."
+
+      # High Memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) 
+              / node_memory_MemTotal_bytes * 100 > 60
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage > 80% for 2 minutes."
+
+      # High Load
+      - alert: HighLoadAverage
+        expr: node_load1 > count(node_cpu_seconds_total{mode="system"}) by(instance)
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High load on {{ $labels.instance }}"
+          description: "Load average > number of cores for 5 minutes."
+
+      # Disk Space
+      - alert: DiskSpaceRunningLow
+        expr: (node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} - node_filesystem_free_bytes{fstype!~"tmpfs|overlay"})
+              / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} * 100 > 80
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space running low on {{ $labels.instance }}"
+          description: "Disk usage > 80%."
+
+  - name: mysql_alerts
+    rules:
+      # MySQL Down
+      - alert: MySQLDown
+        expr: mysql_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MySQL is down on {{ $labels.instance }}"
+          description: "MySQL exporter reports mysql_up = 0."
