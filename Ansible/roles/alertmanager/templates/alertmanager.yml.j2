@@ -1,0 +1,18 @@
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: '{{ from_email_address}}'
+  smtp_auth_username: '{{ from_email_address }}'
+  smtp_auth_password: '{{ email_password }}'
+
+route:
+  group_by: ['alertname', 'instance']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+  receiver: 'demo-email'
+
+receivers:
+  - name: 'demo-email'
+    email_configs:
+      - to: '{{ to_email_address }}'
+

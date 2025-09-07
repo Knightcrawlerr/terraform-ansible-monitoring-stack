@@ -16,7 +16,7 @@ locals {
   name_prefix       = "ec2-monitoring-demo"
   instances = {
     "monitoring" = { name = "${local.name_prefix}-monitoring" }
-    "appdemo-1"  = { name = "${local.name_prefix}-appdemo-1" }
+    # "appdemo-1"  = { name = "${local.name_prefix}-appdemo-1" }
     # "appdemo-2"  = { name = "${local.name_prefix}-appdemo-2" }
     # Add more entries here for future app demo servers
   }
@@ -167,6 +167,93 @@ resource "aws_security_group" "sg_appdemo" {
 
 }
 
+resource "aws_sns_topic" "sns_topic" {
+  name = "${local.name_prefix}-sns-topic"
+  display_name = "EC2 Monitoring Alerts"
+
+  tags = {
+    Name = "${local.name_prefix}-sns-topic"
+    environment = var.environment
+  }
+  
+}
+
+resource "aws_sns_topic_subscription" "sns_topic_subscription" {
+  topic_arn = aws_sns_topic.sns_topic.arn
+  protocol  = "sms"
+  endpoint  = var.sns_phone_number
+  
+}
+
+# Get AWS account details (needed for SourceOwner condition)
+data "aws_caller_identity" "current" {}
+
+
+data "aws_iam_policy_document" "sns_publish_policy_doc" {
+  statement {
+    effect = "Allow"
+    actions = ["sns:Publish"]
+    resources = [aws_sns_topic.sns_topic.arn]
+    principals {
+      type        = "AWS"
+      identifiers = [aws_iam_role.ec2_role.arn]
+    }
+    condition {
+      test = "StringEquals"
+      variable = "aws:SourceAccount"
+      values = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+
+
+resource "aws_sns_topic_policy" "sns_topic_policy" {
+  arn    = aws_sns_topic.sns_topic.arn
+  policy = data.aws_iam_policy_document.sns_publish_policy_doc.json
+  
+}
+
+data "aws_iam_policy_document" "assume_role_policy" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+    actions = ["sts:AssumeRole"]
+  }
+  
+}
+
+
+resource "aws_iam_role" "ec2_role" {
+  name               = "${local.name_prefix}-ec2-role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
+  
+}
+
+# Policy that allows EC2 role to publish to the topic
+data "aws_iam_policy_document" "sns_publish_ec2" {
+  statement {
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.sns_topic.arn]
+  }
+}
+
+resource "aws_iam_policy" "sns_publish_policy" {
+  name   = "${local.name_prefix}-sns-publish"
+  policy = data.aws_iam_policy_document.sns_publish_ec2.json
+}
+
+resource "aws_iam_role_policy_attachment" "sns_publish_attach" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.sns_publish_policy.arn
+}
+
+
+
+
 # resource "aws_instance" "servers" {
 #   count         = 2
 #   ami           = var.ami_id
@@ -181,6 +268,11 @@ resource "aws_security_group" "sg_appdemo" {
 #   }
 # }
 
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "${local.name_prefix}-instance-profile"
+  role = aws_iam_role.ec2_role.name
+  
+}
 resource "aws_instance" "servers" {
   for_each               = local.instances
   ami                    = var.ami_id
@@ -189,6 +281,9 @@ resource "aws_instance" "servers" {
   associate_public_ip_address = true
   subnet_id              = aws_subnet.ec2_monitoring_subnet.id
   vpc_security_group_ids = each.key == "monitoring" ? [aws_security_group.sg_monitoring.id] : [aws_security_group.sg_appdemo.id]
+   # Assign IAM role only for monitoring server
+  iam_instance_profile = each.key == "monitoring" ? aws_iam_instance_profile.ec2_instance_profile.name : null
+
 
   tags = {
     Name        = each.value.name

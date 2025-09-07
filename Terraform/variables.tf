@@ -49,3 +49,10 @@ variable "key_name" {
   default     = "aws_login"
   
 }
+
+variable "sns_phone_number" {
+  description = "The phone number to receive SNS alerts (in E.164 format, e.g., +1234567890)"
+  type        = string
+  default = "+919999999999" # Replace with your phone number
+  
+}

@@ -6,15 +6,15 @@
   roles:
     - prometheus
     - alertmanager
-    # - grafana
+    - grafana
     - node_exporter
 
 
-# - hosts: app_servers
-#   become: yes
-#   roles:
-#     - node_exporter
-#     - mysql
-#     - mysqld_exporter
-    # - sysbench
+- hosts: app_servers
+  become: yes
+  roles:
+    - node_exporter
+    - mysql
+    - mysqld_exporter
+    - sysbench
 
