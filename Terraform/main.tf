@@ -16,7 +16,7 @@ locals {
   name_prefix       = "ec2-monitoring-demo"
   instances = {
     "monitoring" = { name = "${local.name_prefix}-monitoring" }
-    # "appdemo-1"  = { name = "${local.name_prefix}-appdemo-1" }
+    "appdemo-1"  = { name = "${local.name_prefix}-appdemo-1" }
     # "appdemo-2"  = { name = "${local.name_prefix}-appdemo-2" }
     # Add more entries here for future app demo servers
   }
